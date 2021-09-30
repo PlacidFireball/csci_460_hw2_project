@@ -78,6 +78,16 @@ void LinkedList<T>::print() {
 }
 
 template<typename T>
+T LinkedList<T>::front() {
+    return tail.next->data;
+}
+
+template<typename T>
+T LinkedList<T>::back() {
+    return tail.prev->data;
+}
+
+template<typename T>
 LinkedList<T>::Node::Node(T d, LinkedList::Node *previous_node, LinkedList::Node *next_node) {
     data = d;
     prev = previous_node;

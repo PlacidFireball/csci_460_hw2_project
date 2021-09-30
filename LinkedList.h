@@ -30,6 +30,8 @@ public:
     long len;
     LinkedList();
     ~LinkedList();
+    T front();
+    T back();
     bool add_front(T item);
     bool add_back(T item);
     bool del_front();
