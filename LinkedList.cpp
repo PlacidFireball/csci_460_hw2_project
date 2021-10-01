@@ -26,6 +26,7 @@ bool LinkedList<T>::add_front(T item) {
         head.next->prev = &nodes[num_nodes];
         head.next = &nodes[num_nodes];
         num_nodes++;
+        if (num_nodes > 998) num_nodes = 0;
         len++;
         return true;
     }
@@ -41,6 +42,7 @@ bool LinkedList<T>::add_back(T item) {
         tail.prev->next = &nodes[num_nodes];
         tail.prev = &nodes[num_nodes];
         num_nodes++;
+        if (num_nodes > 998) num_nodes = 0;
         len++;
         return true;
     }
@@ -85,6 +87,33 @@ T LinkedList<T>::front() {
 template<typename T>
 T LinkedList<T>::back() {
     return tail.prev->data;
+}
+
+template<typename T>
+[[maybe_unused]] void LinkedList<T>::test() {
+    LinkedList<T> list = LinkedList<T>();
+    for (int i = 0; i < 30; i++) {
+        if (i % 2 == 0) {
+            LOG("Add back"); LOG(i);
+            list.add_back((T)i);
+        }
+        else {
+            LOG("Add front"); LOG(i);
+            list.add_front((T)i);
+        }
+        list.print();
+    }
+    for (unsigned long i = 0; i < 10; i++) {
+        if (i % 2 == 0) {
+            LOG("Delete back");
+            list.del_back();
+        }
+        else {
+            LOG("Delete front");
+            list.del_front();
+        }
+        list.print();
+    }
 }
 
 template<typename T>

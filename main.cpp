@@ -2,41 +2,63 @@
 #include <mutex>
 #include <thread>
 #include <random>
-#include <pthread.h>
 #include <chrono>
 #include "LinkedList.h"
 #include "LinkedList.cpp"
 
 #define LOG(s) std::cout << s << std::endl
+#define GLOBAL_DELAY 1000
 
 /* Random Number generation */
-std::random_device dev;
-std::mt19937 rng(dev());
-std::uniform_int_distribution<std::mt19937::result_type> dist25(0,24);
-LinkedList<unsigned long> list = LinkedList<unsigned long>();
-std::mutex mutex = std::mutex();
+static std::random_device dev;
+static std::mt19937 rng(dev());
+static std::uniform_int_distribution<std::mt19937::result_type> dist25(0,24);
+/* List and Mutex */
+static LinkedList<unsigned long> list = LinkedList<unsigned long>();
+static std::mutex mutex = std::mutex();
 
-class ConsumerBegin {
+class EvenConsumer {
 public:
     [[noreturn]] static void consume() {
         while (true) {
             mutex.lock();
-            if (list.len > 0 && list.front() % 2 == 0) list.del_front();
-            else LOG("The list is empty, there is nothing to consume: Consumer Begin");
-            mutex.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            if (list.len > 0 && list.front() % 2 == 0) {
+                list.del_front();
+                LOG("EVEN CONSUMER | Consumed front");
+                mutex.unlock();
+            }
+            else if (list.len == 0) {
+                LOG("EVEN CONSUMER | List is empty: waiting");
+                mutex.unlock();
+            }
+            else {
+                LOG("EVEN CONSUMER | Cannot consume: front is odd");
+                mutex.unlock();
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(GLOBAL_DELAY));
         }
     }
 };
-class ConsumerEnd {
+class OddConsumer {
 public:
     [[noreturn]] static void consume() {
         while (true) {
             mutex.lock();
-            if (list.len > 0 && list.back() % 2 == 1) list.del_back();
-            else LOG("The list is empty, there is nothing to consume: Consumer End");
-            mutex.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            if (list.len > 0 && list.front() % 2 == 1) {
+                list.del_front();
+                LOG("ODD CONSUMER | Consumed front");
+                mutex.unlock();
+            }
+            else if (list.len == 0) {
+                LOG("ODD CONSUMER | List empty, cannot consume: waiting");
+                mutex.unlock();
+            }
+            else {
+                LOG("ODD CONSUMER | Cannot consume: front is even");
+                mutex.unlock();
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(GLOBAL_DELAY));
         }
     }
 };
@@ -48,13 +70,17 @@ public:
     [[noreturn]] static void produce() {
         while (true) {
             mutex.lock();
-            if (list.len < 30) {
+            if (list.len < list.MAX_LEN) {
+                LOG("PRODUCER1 | Add odd to list");
                 list.add_back(2*dist25(rng)+1);
+                mutex.unlock();
             }
-            else LOG("The list is full, cannot produce: Producer1");
-            list.print();
-            mutex.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            else {
+                LOG("PRODUCER1 | The list is full: waiting.");
+                mutex.unlock();
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(GLOBAL_DELAY));
         }
     }
 };
@@ -67,12 +93,15 @@ public:
         while (true) {
             mutex.lock();
             if (list.len < 30) {
+                LOG("PRODUCER2 | Add even to list");
                 list.add_back(2*dist25(rng));
+                mutex.unlock();
             }
-            else LOG("The list is full, cannot produce: Producer2");
-            list.print();
-            mutex.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            else {
+                LOG("PRODUCER2 | The list is full: waiting");
+                mutex.unlock();
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(GLOBAL_DELAY));
         }
     }
 };
@@ -82,22 +111,28 @@ public:
 
 int main() {
 
-    /* Threads to run various functions */
+    // Linked List test
+    LinkedList<unsigned long>::test();
+
+    // Threads to run various functions
     std::thread produce_begin_thread = std::thread(Producer1::produce);
     std::thread produce_end_thread = std::thread(Producer2::produce);
-    std::thread consume_begin_thread = std::thread(ConsumerBegin::consume);
-    std::thread consume_end_thread = std::thread(ConsumerEnd::consume);
+    std::thread consume_begin_thread = std::thread(EvenConsumer::consume);
+    std::thread consume_end_thread = std::thread(OddConsumer::consume);
 
     int i = 0;
     while (true) {
         sleep(1);
+        mutex.lock();
+        list.print();
+        mutex.unlock();
         i++;
-        if (i < 60) { break; }
+        if (i > 60) { break; }
     }
-
+    produce_begin_thread.join();
+    produce_end_thread.join();
     consume_begin_thread.join();
     consume_end_thread.join();
-    produce_end_thread.join();
-    produce_begin_thread.join();
+
     return 0;
 }
