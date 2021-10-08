@@ -7,7 +7,6 @@
 #include "LinkedList.cpp"
 
 #define LOG(s) std::cout << s << std::endl
-#define GLOBAL_DELAY 1000
 
 /* Random Number generation */
 static std::random_device dev;
@@ -21,17 +20,19 @@ static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
 [[noreturn]] static void* consume_even() {
     while (true) {
         mutex.lock(); // lock the mutex
+        LOG("\n| >> EVEN CONSUMER << |");
+        std::cout << "Attempting to consume: " << list.front() << std::endl;
         if (list.len > 0 && list.front() % 2 == 0) { // check if the list is empty and the front is even
             list.del_front(); // if so delete the node at the front of the list
-            LOG("EVEN CONSUMER | Consumed front"); // log what we did
+            LOG("| EVEN CONSUMER >> Consumed front"); // log what we did
             mutex.unlock(); // unlock the mutex
         }
         else if (list.len == 0) {
-            LOG("EVEN CONSUMER | List is empty: waiting"); // log that we are waiting for something to be in the list
+            LOG("| EVEN CONSUMER >> List is empty: waiting"); // log that we are waiting for something to be in the list
             mutex.unlock();
         }
         else {
-            LOG("EVEN CONSUMER | Cannot consume: front is odd"); // log that we are waiting for the front to be even
+            LOG("| EVEN CONSUMER >> Cannot consume: front is odd"); // log that we are waiting for the front to be even
             mutex.unlock();
         }
         sleep(1);
@@ -42,17 +43,21 @@ static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
 [[noreturn]] static void* consume_odd() {
     while (true) {
         mutex.lock();
+        LOG("\n| >> ODD CONSUMER << |");
+        std::cout << "| Attempting to consume: " << list.front() << std::endl;
+        list.print();
         if (list.len > 0 && list.front() % 2 == 1) {
             list.del_front();
-            LOG("ODD CONSUMER | Consumed front");
+            LOG("| ODD CONSUMER >> Consumed front");
+            list.print();
             mutex.unlock();
         }
         else if (list.len == 0) {
-            LOG("ODD CONSUMER | List empty, cannot consume: waiting");
+            LOG("| ODD CONSUMER >> List empty, cannot consume: waiting");
             mutex.unlock();
         }
         else {
-            LOG("ODD CONSUMER | Cannot consume: front is even");
+            LOG("| ODD CONSUMER >> Cannot consume: front is even, waiting");
             mutex.unlock();
         }
         sleep(1);
@@ -63,13 +68,16 @@ static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
 [[noreturn]] static void* produce1() {
     while (true) {
         mutex.lock();
+        LOG("\n| >> ODD PRODUCER << |");
         if (list.len < list.MAX_LEN) { // check to make sure the list isn't full
-            list.add_back(2*dist25(rng)+1); // add an odd number to the back of the list
-            LOG("PRODUCER1 | Add odd to list"); // log what we did
+            unsigned long gen = 2*dist25(rng)+1;
+            std::cout << "| ODD PRODUCER >> produce: " << gen << std::endl;
+            list.add_back(gen); // add an odd number to the back of the list
+            list.print();
             mutex.unlock();
         }
         else {
-            LOG("PRODUCER1 | The list is full: waiting."); // notify the console that we are waiting
+            LOG("| ODD PRODUCER >> The list is full: waiting."); // notify the console that we are waiting
             mutex.unlock();
         }
         sleep(1);
@@ -80,13 +88,16 @@ static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
 [[noreturn]] static void* produce2() {
     while (true) {
         mutex.lock();
+        LOG("\n| >> EVEN PRODUCER << |");
         if (list.len < list.MAX_LEN) {
-            LOG("PRODUCER2 | Add even to list");
-            list.add_back(2*dist25(rng)); // except we are using even integers in this guy
+            unsigned long gen = 2*dist25(rng);
+            std::cout << "| EVEN PRODUCER >> produce: " << gen << std::endl;
+            list.add_back(gen); // except we are using even integers in this guy
+            list.print();
             mutex.unlock();
         }
         else {
-            LOG("PRODUCER2 | The list is full: waiting");
+            LOG("| EVEN PRODUCER >> The list is full: waiting");
             mutex.unlock();
         }
         sleep(1);
@@ -96,13 +107,14 @@ static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
 int main() {
 
     // Linked List test
-    // LinkedList<unsigned long>::test();
+    //LinkedList<unsigned long>::test();
 
     /* compiler complained, so I had to do some weird casting to get it all to work */
     // std::thread has a much better api, but we weren't allowed to use it :)
+
     pthread_t threads[4];
     int thread_create[4];
-    /* initialize all of our threads and send them off to their respective loops */
+    // initialize all of our threads and send them off to their respective loops
     thread_create[0] = pthread_create(&threads[0], NULL, reinterpret_cast<void *(*)(void *)>(produce1), NULL);
     thread_create[1] = pthread_create(&threads[1], NULL, reinterpret_cast<void *(*)(void *)>(produce2), NULL);
     thread_create[2] = pthread_create(&threads[2], NULL, reinterpret_cast<void *(*)(void*)>(consume_even), NULL);
@@ -119,9 +131,6 @@ int main() {
     int i = 0;
     while (true) {
         sleep(1);
-        mutex.lock(); // make sure we don't try to print anything while the threads (not main) are reading/writing from it
-        list.print();
-        mutex.unlock();
         i++;
         if (i > 60) { break; }
     }

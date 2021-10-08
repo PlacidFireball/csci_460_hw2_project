@@ -19,14 +19,13 @@ LinkedList<T>::LinkedList() {
 
 template<typename T>
 bool LinkedList<T>::add_front(T item) {
+    /* Create a new node on the heap and assign pointers as needed */
     if (len < MAX_LEN) {
-        nodes[num_nodes] = Node(item, &dummy_node, &dummy_node);;
-        nodes[num_nodes].prev = &head;
-        nodes[num_nodes].next = head.next;
-        head.next->prev = &nodes[num_nodes];
-        head.next = &nodes[num_nodes];
-        num_nodes++;
-        if (num_nodes > 998) num_nodes = 0;
+        Node* new_node = new Node(item, &dummy_node, &dummy_node);
+        new_node->prev = &head;
+        new_node->next = head.next;
+        head.next->prev = new_node;
+        head.next = new_node;
         len++;
         return true;
     }
@@ -35,36 +34,48 @@ bool LinkedList<T>::add_front(T item) {
 
 template<typename T>
 bool LinkedList<T>::add_back(T item) {
+    /* Create a new node on the heap and assign pointers as needed */
     if (len < MAX_LEN) {
-        nodes[num_nodes] = Node(item, &dummy_node, &dummy_node);
-        nodes[num_nodes].next = &tail;
-        nodes[num_nodes].prev = tail.prev;
-        tail.prev->next = &nodes[num_nodes];
-        tail.prev = &nodes[num_nodes];
-        num_nodes++;
-        if (num_nodes > 998) num_nodes = 0;
+        Node* new_node = new Node(item, &dummy_node, &dummy_node);
+        new_node->next = &tail;
+        new_node->prev = tail.prev;
+        tail.prev->next = new_node;
+        tail.prev = new_node;
         len++;
-        return true;
     }
     return false;
 }
 
 template<typename T>
 bool LinkedList<T>::del_front() {
-    Node* first = head.next;
-    head.next = first->next;
-    head.next->prev = &head;
-    len--;
-    return true;
+    if (is_empty()) {
+        std::cout << "The list is empty! Cannot delete from the back." << std::endl;
+        return false;
+    }
+    else {
+        Node* first = head.next; // get the node at the front
+        head.next = first->next; // set the pointers such that the head points to the node after the first node
+        head.next->prev = &head; // and the new first node points to the head
+        delete first; // free the memory, so we don't get a memory leak
+        len--;
+        return true;
+    }
 }
 
 template<typename T>
 bool LinkedList<T>::del_back() {
-    Node* last = tail.prev;
-    tail.prev = last->prev;
-    tail.prev->next = &tail;
-    len--;
-    return true;
+    if (is_empty()) {
+        std::cout << "The list is empty! Cannot delete from the back." << std::endl;
+        return false;
+    }
+    else {
+        Node* last = tail.prev; // get the node at the back
+        tail.prev = last->prev; // set the pointers such that tail points to the node in front of the last one
+        tail.prev->next = &tail; // and the new last node points to the tail
+        delete last; // free the memory, so we don't get a memory leak
+        len--;
+        return true;
+    }
 }
 
 template<typename T>
@@ -81,7 +92,7 @@ void LinkedList<T>::print() {
 
 template<typename T>
 T LinkedList<T>::front() {
-    return tail.next->data;
+    return head.next->data;
 }
 
 template<typename T>
@@ -117,6 +128,11 @@ template<typename T>
 }
 
 template<typename T>
+bool LinkedList<T>::is_empty() {
+    return len == 0;
+}
+
+template<typename T>
 LinkedList<T>::Node::Node(T d, LinkedList::Node *previous_node, LinkedList::Node *next_node) {
     data = d;
     prev = previous_node;
@@ -125,6 +141,6 @@ LinkedList<T>::Node::Node(T d, LinkedList::Node *previous_node, LinkedList::Node
 
 template<typename T>
 LinkedList<T>::Node::Node() {
-    data = -1;
+
 }
 

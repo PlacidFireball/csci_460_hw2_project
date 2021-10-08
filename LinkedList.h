@@ -27,14 +27,13 @@ public:
     Node tail = Node(-1, &head, &dummy_node);
 public:
     [[maybe_unused]] static void test();
-    Node nodes[1000];
-    long num_nodes = 0;
     const long MAX_LEN = 30;
     long len;
     LinkedList();
     ~LinkedList();
     T front();
     T back();
+    bool is_empty();
     bool add_front(T item);
     bool add_back(T item);
     bool del_front();
