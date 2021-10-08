@@ -10,7 +10,6 @@ LinkedList<T>::~LinkedList() = default;
 template<typename T>
 LinkedList<T>::LinkedList() {
     len = 0;
-    for (auto & node : nodes) node = Node();
     head = Node(-1, &dummy_node, &tail);
     head.id = "HEAD";
     tail = Node(-1, &head, &dummy_node);

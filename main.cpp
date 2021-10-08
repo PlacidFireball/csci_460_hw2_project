@@ -21,6 +21,8 @@ static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
     while (true) {
         mutex.lock(); // lock the mutex
         LOG("\n| >> EVEN CONSUMER << |");
+        std::cout << "| List Before: ";
+        list.print();
         std::cout << "Attempting to consume: " << list.front() << std::endl;
         if (list.len > 0 && list.front() % 2 == 0) { // check if the list is empty and the front is even
             list.del_front(); // if so delete the node at the front of the list
@@ -44,11 +46,14 @@ static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
     while (true) {
         mutex.lock();
         LOG("\n| >> ODD CONSUMER << |");
+        std::cout << "| List Before: ";
+        list.print();
         std::cout << "| Attempting to consume: " << list.front() << std::endl;
         list.print();
         if (list.len > 0 && list.front() % 2 == 1) {
             list.del_front();
             LOG("| ODD CONSUMER >> Consumed front");
+            //std::cout <<
             list.print();
             mutex.unlock();
         }
@@ -69,6 +74,8 @@ static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
     while (true) {
         mutex.lock();
         LOG("\n| >> ODD PRODUCER << |");
+        std::cout << "| List Before: ";
+        list.print();
         if (list.len < list.MAX_LEN) { // check to make sure the list isn't full
             unsigned long gen = 2*dist25(rng)+1;
             std::cout << "| ODD PRODUCER >> produce: " << gen << std::endl;
@@ -89,6 +96,8 @@ static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
     while (true) {
         mutex.lock();
         LOG("\n| >> EVEN PRODUCER << |");
+        std::cout << "| List Before: ";
+        list.print();
         if (list.len < list.MAX_LEN) {
             unsigned long gen = 2*dist25(rng);
             std::cout << "| EVEN PRODUCER >> produce: " << gen << std::endl;
