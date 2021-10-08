@@ -1,6 +1,8 @@
 #include <iostream>
 #include <mutex>
-#include <thread>
+//#include <thread>
+#include <pthread.h> // :)
+
 #include <random>
 #include <chrono>
 #include "LinkedList.h"
@@ -115,6 +117,7 @@ int main() {
     LinkedList<unsigned long>::test();
 
     // Threads to run various functions
+    pthread_t producer_1 = pthread_create(&producer_1,);
     std::thread produce_begin_thread = std::thread(Producer1::produce);
     std::thread produce_end_thread = std::thread(Producer2::produce);
     std::thread consume_begin_thread = std::thread(EvenConsumer::consume);
