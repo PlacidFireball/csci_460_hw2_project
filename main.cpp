@@ -1,7 +1,38 @@
+/*
+ * CSCI 460 Homework 2 - Completed by Jared Weiss
+ * For Dr. Binhai Zhu on 10/08/21
+ *
+ * Implements the Consumer/Producer problem using threads
+ * (specifically pthreads) to simulate the problem.
+ * For this project I implemented a doubly-linked list, where
+ * producer threads add either odd or even random numbers to the back
+ * of the list and consumer threads consume either odd or even numbers
+ * from the front of the list.
+ *
+ * The code for the Linked List can be found in LinkedList.h and
+ * LinkedList.cpp.
+ *
+ * Compilation instructions:
+ * From the command line: (any c++ compiler should work, I hope, but I used g++ on Linux)
+ * $ g++ -pthread main.cpp LinkedList.cpp -o main
+ * $ ./main > output.txt # send the output to output.txt
+ * NOTE: by default the program will run for ~60 seconds, but you can stop it with Ctrl+C.
+ * $ cat output.txt # see the output
+ *
+ * If you want to build using CMake, this code is found at:
+ * https://github.com/PlacidFireball/csci_460_hw2_project
+ * You can clone it and build it using the included CMakeLists.txt
+ * I used Clion to develop this, so it should work in CLion,
+ * otherwise, good luck.
+ *
+ * */
+
+// TODO: Currently all threads are executing in the same order making predictable behaviour for the list. Kinda sucks.
+
+#include <pthread.h>
 #include <iostream>
 #include <mutex>
 #include <random>
-#include <chrono>
 #include <unistd.h>
 #include "LinkedList.h"
 #include "LinkedList.cpp"
@@ -14,7 +45,7 @@ static std::mt19937 rng(dev());
 static std::uniform_int_distribution<std::mt19937::result_type> dist25(0,24);
 /* List and Mutex */
 static LinkedList<unsigned long> list = LinkedList<unsigned long>(); // list of unsigned longs for our threads to mess around with
-static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
+static std::mutex mutex; // enforce mutual exclusion on the list.
 
 /* even consumer function for one of our threads to run */
 [[noreturn]] static void* consume_even() {
@@ -27,6 +58,7 @@ static std::mutex mutex = std::mutex(); // enforce mutual exclusion on the list.
         if (list.len > 0 && list.front() % 2 == 0) { // check if the list is empty and the front is even
             list.del_front(); // if so delete the node at the front of the list
             LOG("| EVEN CONSUMER >> Consumed front"); // log what we did
+            list.print();
             mutex.unlock(); // unlock the mutex
         }
         else if (list.len == 0) {
@@ -118,8 +150,8 @@ int main() {
     // Linked List test
     //LinkedList<unsigned long>::test();
 
-    /* compiler complained, so I had to do some weird casting to get it all to work */
-    // std::thread has a much better api, but we weren't allowed to use it :)
+    // populate the list with some items
+    //for (int i = 0; i < 10; i++) list.add_back((i % 2 + 1)*dist25(dev));
 
     pthread_t threads[4];
     int thread_create[4];
