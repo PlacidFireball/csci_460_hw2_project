@@ -14,9 +14,9 @@
  *
  * Compilation instructions:
  * From the command line: (any c++ compiler should work, I hope, but I used g++ on Linux)
- * $ g++ -pthread main.cpp LinkedList.cpp -o main
+ * $ g++ -pthread main.cpp LinkedList.h LinkedList.cpp -o main
  * $ ./main > output.txt # send the output to output.txt
- * NOTE: by default the program will run for ~60 seconds, but you can stop it with Ctrl+C.
+ * NOTE: by default the program will run for ~10 seconds, but you can stop it with Ctrl+C.
  * $ cat output.txt # see the output
  *
  * If you want to build using CMake, this code is found at:
@@ -27,13 +27,12 @@
  *
  * */
 
-// TODO: Currently all threads are executing in the same order making predictable behaviour for the list. Kinda sucks.
-
 #include <pthread.h>
 #include <iostream>
 #include <mutex>
 #include <random>
 #include <unistd.h>
+#include <time.h>
 #include "LinkedList.h"
 #include "LinkedList.cpp"
 
@@ -42,10 +41,12 @@
 /* Random Number generation */
 static std::random_device dev;
 static std::mt19937 rng(dev());
-static std::uniform_int_distribution<std::mt19937::result_type> dist25(0,24);
+static std::uniform_int_distribution<std::mt19937::result_type> dist25(0,24); // uniform distribution to get integers between 0 and 49
+static std::uniform_int_distribution<std::mt19937::result_type> randomSleep(100000000,500000000); // random sleep length so threads don't execute predictably
 /* List and Mutex */
 static LinkedList<unsigned long> list = LinkedList<unsigned long>(); // list of unsigned longs for our threads to mess around with
 static std::mutex mutex; // enforce mutual exclusion on the list.
+struct timespec sleeper = {0, 0}; // timespec struct so we can use nanosleep()
 
 /* even consumer function for one of our threads to run */
 [[noreturn]] static void* consume_even() {
@@ -69,7 +70,8 @@ static std::mutex mutex; // enforce mutual exclusion on the list.
             LOG("| EVEN CONSUMER >> Cannot consume: front is odd"); // log that we are waiting for the front to be even
             mutex.unlock();
         }
-        sleep(1);
+        sleeper.tv_nsec = randomSleep(dev); // sleep for a random number of nanoseconds
+        nanosleep(&sleeper, nullptr); // man nanosleep, pretty cool
     }
 }
 
@@ -81,15 +83,13 @@ static std::mutex mutex; // enforce mutual exclusion on the list.
         std::cout << "| List Before: ";
         list.print();
         std::cout << "| Attempting to consume: " << list.front() << std::endl;
-        list.print();
         if (list.len > 0 && list.front() % 2 == 1) {
             list.del_front();
             LOG("| ODD CONSUMER >> Consumed front");
-            //std::cout <<
             list.print();
             mutex.unlock();
         }
-        else if (list.len == 0) {
+        else if (list.is_empty()) {
             LOG("| ODD CONSUMER >> List empty, cannot consume: waiting");
             mutex.unlock();
         }
@@ -97,7 +97,8 @@ static std::mutex mutex; // enforce mutual exclusion on the list.
             LOG("| ODD CONSUMER >> Cannot consume: front is even, waiting");
             mutex.unlock();
         }
-        sleep(1);
+        sleeper.tv_nsec = randomSleep(dev);
+        nanosleep(&sleeper, nullptr);
     }
 }
 
@@ -119,7 +120,8 @@ static std::mutex mutex; // enforce mutual exclusion on the list.
             LOG("| ODD PRODUCER >> The list is full: waiting."); // notify the console that we are waiting
             mutex.unlock();
         }
-        sleep(1);
+        sleeper.tv_nsec = randomSleep(dev); // sleep for a random number of nanoseconds
+        nanosleep(&sleeper, nullptr); // man nanosleep, pretty cool
     }
 }
 
@@ -141,7 +143,8 @@ static std::mutex mutex; // enforce mutual exclusion on the list.
             LOG("| EVEN PRODUCER >> The list is full: waiting");
             mutex.unlock();
         }
-        sleep(1);
+        sleeper.tv_nsec = randomSleep(dev);
+        nanosleep(&sleeper, nullptr);
     }
 }
 
@@ -168,12 +171,12 @@ int main() {
             exit(1);
         }
 
-    // run the program for ~60 seconds
+    // run the program for ~10 seconds
     int i = 0;
     while (true) {
         sleep(1);
         i++;
-        if (i > 60) { break; }
+        if (i > 10) { break; }
     }
     return 0;
 }
